@@ -1,4 +1,4 @@
-PROJECT := sdl3imgui
+PROJECT := sdlgl
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 SHA1 := $(shell git rev-parse --verify HEAD)
 
