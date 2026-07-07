@@ -4,20 +4,17 @@
 #include <SDL3/SDL.h>
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-#define GL_GLEXT_PROTOTYPES 1
-#include <SDL3/SDL_opengl.h>
-#include <SDL3/SDL_opengl_glext.h>
 #include <GLES3/gl3.h> // Emscripten provides WebGL2 symbols natively here
 #include <functional>
 static std::function<void()>            MainLoopForEmscriptenP;
 static void MainLoopForEmscripten()     { MainLoopForEmscriptenP(); }
 #define EMSCRIPTEN_MAINLOOP_BEGIN       MainLoopForEmscriptenP = [&]() { do
-#define EMSCRIPTEN_MAINLOOP_END         while (0); }; emscripten_set_main_loop(MainLoopForEmscripten, 0, true)
+#define EMSCRIPTEN_MAINLOOP_END         while (0); }; emscripten_set_main_loop(MainLoopForEmscripten, 0, true);
 #else
 #define GL_GLEXT_PROTOTYPES 1
 #include <SDL3/SDL_opengl.h>
 #include <SDL3/SDL_opengl_glext.h>
-#define EMSCRIPTEN_MAINLOOP_BEGIN
+#define EMSCRIPTEN_MAINLOOP_BEGIN       while (running)
 #define EMSCRIPTEN_MAINLOOP_END
 #endif
 
@@ -242,27 +239,18 @@ int main(int, char**)
   SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
   SDL_ShowWindow(window);
 
-  ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
   // Main loop
-  bool done = false;
-#ifdef __EMSCRIPTEN__
-  // For an Emscripten build we are disabling file-system access, so let's not attempt to do a fopen() of the imgui.ini file.
-  // You may manually call LoadIniSettingsFromMemory() to load settings from your own storage.
-  io.IniFilename = nullptr;
+  bool running = true;
   EMSCRIPTEN_MAINLOOP_BEGIN
-#else
-    while (!done)
-#endif
     {
       // Poll and handle events (inputs, window resize, etc.)
       SDL_Event event;
       while (SDL_PollEvent(&event))
       {
         if (event.type == SDL_EVENT_QUIT)
-          done = true;
+          running = false;
         if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == SDL_GetWindowID(window))
-          done = true;
+          running = false;
       }
 
       // [If using SDL_MAIN_USE_CALLBACKS: all code below would likely be your SDL_AppIterate() function]
@@ -273,8 +261,8 @@ int main(int, char**)
       }
 
       // Rendering
-      glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-      glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
+      //glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+      glClearColor(0.45f, 0.55f, 0.60f, 1.00f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
       glUseProgram(shaderProgram);
@@ -308,9 +296,7 @@ int main(int, char**)
 
       SDL_GL_SwapWindow(window);
     }
-#ifdef __EMSCRIPTEN__
-  EMSCRIPTEN_MAINLOOP_END;
-#endif
+  EMSCRIPTEN_MAINLOOP_END
 
   // Cleanup
   // [If using SDL_MAIN_USE_CALLBACKS: all code below would likely be your SDL_AppQuit() function]

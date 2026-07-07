@@ -61,6 +61,7 @@ endif()
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
 include(CTest)
 
+find_package(OpenGL REQUIRED)
 # SDL
 find_package(SDL3 REQUIRED)
 if(${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
@@ -90,6 +91,7 @@ endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE
   SDL3::SDL3
   SDL3_image::SDL3_image
+  OpenGL::GL
 )
 if(${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
   set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -98,7 +100,8 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
   )
   target_link_options(${PROJECT_NAME} PRIVATE
     "-sUSE_WEBGL2=1"
-    "-sALLOW_MEMORY_GROWTH=1" # Good practice for WebGL apps
+    "-sINITIAL_MEMORY=67108864" # Allocates exactly 64MB at startup
+    "-sALLOW_MEMORY_GROWTH=0"   # Prevents the buffer from becoming "resizable"
     "--shell-file ${CMAKE_CURRENT_SOURCE_DIR}/src/shell.html"
   )
 endif()
