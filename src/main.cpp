@@ -1,7 +1,8 @@
-#include <iostream>
 #include <cmath>
+#include <iostream>
 
 #include <SDL3/SDL.h>
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #include <GLES3/gl3.h> // Emscripten provides WebGL2 symbols natively here
@@ -140,7 +141,7 @@ int main(int, char**)
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #endif
-  //
+
   // Create window with graphics context
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
@@ -261,11 +262,11 @@ int main(int, char**)
       }
 
       // Rendering
-      //glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
       glClearColor(0.45f, 0.55f, 0.60f, 1.00f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
       glUseProgram(shaderProgram);
+
       // Build MVP Matrix
       float time = SDL_GetTicks() / 1000.0f;
 
