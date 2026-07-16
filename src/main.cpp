@@ -135,10 +135,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   // --- 1. Update Game/App Logic Here ---
   float time = SDL_GetTicks() / 1000.0f;
 
-  // Build MVP Matrix using GLM
-  glm::mat4 model =
-      glm::rotate(glm::mat4(1.0f), time, glm::vec3(0.0f, 1.0f, 0.0f));
-
+  // Build Projection * View (Camera) Matrix using GLM
   glm::mat4 view =
       glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.5f));
 
@@ -146,18 +143,14 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
       glm::perspective(45.0f * (static_cast<float>(std::numbers::pi) / 180.0f),
                        1280.0f / 800.0f, 0.1f, 100.0f);
 
-  glm::mat4 mvp = projection * view * model;
-
-  // Pass matrix to shader
-  state->renderer->use();
-  state->renderer->setMVP(mvp);
+  glm::mat4 pv = projection * view;
 
   // --- 2. Render Graphics Here ---
   glClearColor(0.45f, 0.55f, 0.60f, 1.00f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   // Draw Cube
-  state->cube->draw();
+  state->cube->draw(*state->renderer, pv, time);
 
   SDL_GL_SwapWindow(state->window);
 

@@ -1,4 +1,6 @@
 #include "cube.hpp"
+#include "gl_renderer.hpp"
+#include <glm/gtc/matrix_transform.hpp>
 
 Cube::Cube() : VAO(0), VBO(0), EBO(0) {}
 
@@ -52,8 +54,15 @@ void Cube::init() {
   glBindVertexArray(0);
 }
 
-void Cube::draw() const {
+void Cube::draw(const glRenderer& renderer, const glm::mat4& pv, float time) const {
   if (VAO != 0) {
+    glm::mat4 model =
+        glm::rotate(glm::mat4(1.0f), time, glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 mvp = pv * model;
+
+    renderer.use();
+    renderer.setMVP(mvp);
+
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
   }

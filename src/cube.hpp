@@ -9,13 +9,17 @@
 #include <SDL3/SDL_opengl_glext.h>
 #endif
 
+#include <glm/glm.hpp>
+
+class glRenderer;
+
 class Cube {
 public:
   Cube();
   ~Cube();
 
   void init();
-  void draw() const;
+  void draw(const glRenderer& renderer, const glm::mat4& pv, float time) const;
   void destroy();
 
 private:
