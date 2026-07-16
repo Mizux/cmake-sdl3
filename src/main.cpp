@@ -272,10 +272,14 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 SDL_AppResult SDL_AppIterate(void* appstate) {
   AppState* state = static_cast<AppState*>(appstate);
 
+  if (SDL_GetWindowFlags(state->window) & SDL_WINDOW_MINIMIZED) {
+    SDL_Delay(10);
+    return SDL_APP_CONTINUE;  // Keep looping
+  }
+
   // --- 1. Update Game/App Logic Here ---
   float time = SDL_GetTicks() / 1000.0f;
 
-  // --- 2. Render Graphics Here ---
   // Build MVP Matrix
   float model[16];
   get_rotation_y(time, model);  // Rotate around Y axis over time
@@ -300,10 +304,11 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   glUseProgram(state->shaderProgram);
   glUniformMatrix4fv(state->mvpLoc, 1, GL_TRUE, mvp);
 
-  // Draw Cube
+  // --- 2. Render Graphics Here ---
   glClearColor(0.45f, 0.55f, 0.60f, 1.00f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+  // Draw Cube
   glBindVertexArray(state->VAO);
   glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 
