@@ -1,10 +1,8 @@
-#include <cmath>
-#include <iostream>
-#include <numbers>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <iostream>
+#include <numbers>
 
 #define SDL_MAIN_USE_CALLBACKS 1  // Tell SDL to use the callback architecture
 #include <SDL3/SDL.h>
@@ -248,13 +246,15 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   float time = SDL_GetTicks() / 1000.0f;
 
   // Build MVP Matrix using GLM
-  glm::mat4 model = glm::rotate(glm::mat4(1.0f), time, glm::vec3(0.0f, 1.0f, 0.0f));
+  glm::mat4 model =
+      glm::rotate(glm::mat4(1.0f), time, glm::vec3(0.0f, 1.0f, 0.0f));
 
-  glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.5f));
+  glm::mat4 view =
+      glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.5f));
 
-  glm::mat4 projection = glm::perspective(
-      45.0f * (static_cast<float>(std::numbers::pi) / 180.0f),
-      1280.0f / 800.0f, 0.1f, 100.0f);
+  glm::mat4 projection =
+      glm::perspective(45.0f * (static_cast<float>(std::numbers::pi) / 180.0f),
+                       1280.0f / 800.0f, 0.1f, 100.0f);
 
   glm::mat4 mvp = projection * view * model;
 
