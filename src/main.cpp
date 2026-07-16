@@ -2,6 +2,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
+#include <memory>
 #include <numbers>
 
 #define SDL_MAIN_USE_CALLBACKS 1  // Tell SDL to use the callback architecture
@@ -26,8 +27,8 @@ struct AppState {
   SDL_Window* window = nullptr;
   SDL_GLContext gl_context = nullptr;
 
-  glRenderer* renderer = nullptr;
-  Cube* cube = nullptr;
+  std::unique_ptr<glRenderer> renderer;
+  std::unique_ptr<Cube> cube;
 };
 
 // 1. Called once when the app starts. Initialize everything here.
@@ -83,14 +84,14 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
   glEnable(GL_DEPTH_TEST);
 
   // SHADER SETUP START
-  state->renderer = new glRenderer();
+  state->renderer = std::make_unique<glRenderer>();
   if (!state->renderer->init()) {
     SDL_Log("Renderer initialization failed");
     return SDL_APP_FAILURE;
   }
 
   // CUBE SETUP
-  state->cube = new Cube();
+  state->cube = std::make_unique<Cube>();
   state->cube->init();
   // SHADER SETUP END
 
@@ -168,14 +169,9 @@ void SDL_AppQuit(void* appstate, SDL_AppResult result) {
   if (appstate) {
     AppState* state = static_cast<AppState*>(appstate);
 
-    if (state->cube) {
-      delete state->cube;
-      state->cube = nullptr;
-    }
-    if (state->renderer) {
-      delete state->renderer;
-      state->renderer = nullptr;
-    }
+    // Destroy cube and renderer while the OpenGL context is still valid
+    state->cube.reset();
+    state->renderer.reset();
 
     SDL_GL_DestroyContext(state->gl_context);
     SDL_DestroyWindow(state->window);
