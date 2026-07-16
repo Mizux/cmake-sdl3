@@ -17,65 +17,8 @@
 #include <SDL3/SDL_opengl_glext.h>
 #endif
 
-// Shader Sources
-#ifdef __EMSCRIPTEN__
-const char* vertexShaderSource = R"(#version 300 es
-    layout (location = 0) in vec3 aPos;
-    layout (location = 1) in vec3 aColor;
-    out vec3 ourColor;
-    uniform mat4 uMVP;
-    void main() {
-        gl_Position = uMVP * vec4(aPos, 1.0);
-        ourColor = aColor;
-    }
-)";
-
-const char* fragmentShaderSource = R"(#version 300 es
-    precision mediump float; // <-- MANDATORY in WebGL 2 fragment shaders
-    in vec3 ourColor;
-    out vec4 FragColor;
-    void main() {
-        FragColor = vec4(ourColor, 1.0);
-    }
-)";
-#else
-const char* vertexShaderSource = R"(#version 330 core
-    layout (location = 0) in vec3 aPos;
-    layout (location = 1) in vec3 aColor;
-    out vec3 ourColor;
-    uniform mat4 uMVP;
-    void main() {
-        gl_Position = uMVP * vec4(aPos, 1.0);
-        ourColor = aColor;
-    }
-)";
-
-const char* fragmentShaderSource = R"(#version 330 core
-    in vec3 ourColor;
-    out vec4 FragColor;
-    void main() {
-        FragColor = vec4(ourColor, 1.0);
-    }
-)";
-#endif
-
-// Helper to compile and check shaders
-GLuint compileShader(GLenum type, const char* source) {
-  GLuint shader = glCreateShader(type);
-  glShaderSource(shader, 1, &source, NULL);
-  glCompileShader(shader);
-
-  GLint success;
-  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-  if (!success) {
-    char infoLog[512];
-    glGetShaderInfoLog(shader, 512, NULL, infoLog);
-    std::cerr << "SHADER COMPILATION ERROR ("
-              << (type == GL_VERTEX_SHADER ? "VERTEX" : "FRAGMENT") << "):\n"
-              << infoLog << std::endl;
-  }
-  return shader;
-}
+#include "gl_renderer.hpp"
+#include "cube.hpp"
 
 // Main code
 // A struct to hold your application state (replaces global variables)
@@ -83,9 +26,8 @@ struct AppState {
   SDL_Window* window = nullptr;
   SDL_GLContext gl_context = nullptr;
 
-  GLuint shaderProgram;
-  GLuint VAO, VBO, EBO;
-  GLint mvpLoc;
+  glRenderer* renderer = nullptr;
+  Cube* cube = nullptr;
 };
 
 // 1. Called once when the app starts. Initialize everything here.
@@ -141,68 +83,15 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
   glEnable(GL_DEPTH_TEST);
 
   // SHADER SETUP START
-  // Compile and Link Shaders
-  GLuint vs = compileShader(GL_VERTEX_SHADER, vertexShaderSource);
-  GLuint fs = compileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
-  state->shaderProgram = glCreateProgram();
-  glAttachShader(state->shaderProgram, vs);
-  glAttachShader(state->shaderProgram, fs);
-  glLinkProgram(state->shaderProgram);
-  {
-    GLint success;
-    glGetProgramiv(state->shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-      char infoLog[512];
-      glGetProgramInfoLog(state->shaderProgram, 512, NULL, infoLog);
-      std::cerr << "SHADER PROGRAM LINKING ERROR:\n" << infoLog << std::endl;
-    }
+  state->renderer = new glRenderer();
+  if (!state->renderer->init()) {
+    SDL_Log("Renderer initialization failed");
+    return SDL_APP_FAILURE;
   }
-  glDeleteShader(vs);
-  glDeleteShader(fs);
 
-  // Cube Vertices: Position (X,Y,Z) and Color (R,G,B)
-  float vertices[] = {
-      // Front face          // Colors
-      -0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f,   // BL
-      0.5f, -0.5f, 0.5f, 0.0f, 1.0f, 0.0f,    // BR
-      0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f,     // TR
-      -0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 0.0f,    // TL
-                                              // Back face
-      -0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f,  // BL
-      0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 1.0f,   // BR
-      0.5f, 0.5f, -0.5f, 1.0f, 1.0f, 1.0f,    // TR
-      -0.5f, 0.5f, -0.5f, 0.0f, 0.0f, 0.0f    // TL
-  };
-
-  unsigned int indices[] = {
-      0, 1, 2, 2, 3, 0,  // Front
-      1, 5, 6, 6, 2, 1,  // Right
-      7, 6, 5, 5, 4, 7,  // Back
-      4, 0, 3, 3, 7, 4,  // Left
-      4, 5, 1, 1, 0, 4,  // Bottom
-      3, 2, 6, 6, 7, 3   // Top
-  };
-
-  glGenVertexArrays(1, &state->VAO);
-  glGenBuffers(1, &state->VBO);
-  glGenBuffers(1, &state->EBO);
-
-  glBindVertexArray(state->VAO);
-  glBindBuffer(GL_ARRAY_BUFFER, state->VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
-               GL_STATIC_DRAW);
-
-  // Position Attribute
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-  glEnableVertexAttribArray(0);
-  // Color Attribute
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
-                        (void*)(3 * sizeof(float)));
-  glEnableVertexAttribArray(1);
-
-  state->mvpLoc = glGetUniformLocation(state->shaderProgram, "uMVP");
+  // CUBE SETUP
+  state->cube = new Cube();
+  state->cube->init();
   // SHADER SETUP END
 
   SDL_GL_MakeCurrent(state->window, state->gl_context);
@@ -259,16 +148,15 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   glm::mat4 mvp = projection * view * model;
 
   // Pass matrix to shader
-  glUseProgram(state->shaderProgram);
-  glUniformMatrix4fv(state->mvpLoc, 1, GL_FALSE, glm::value_ptr(mvp));
+  state->renderer->use();
+  state->renderer->setMVP(mvp);
 
   // --- 2. Render Graphics Here ---
   glClearColor(0.45f, 0.55f, 0.60f, 1.00f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   // Draw Cube
-  glBindVertexArray(state->VAO);
-  glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+  state->cube->draw();
 
   SDL_GL_SwapWindow(state->window);
 
@@ -280,10 +168,14 @@ void SDL_AppQuit(void* appstate, SDL_AppResult result) {
   if (appstate) {
     AppState* state = static_cast<AppState*>(appstate);
 
-    glDeleteVertexArrays(1, &state->VAO);
-    glDeleteBuffers(1, &state->VBO);
-    glDeleteBuffers(1, &state->EBO);
-    glDeleteProgram(state->shaderProgram);
+    if (state->cube) {
+      delete state->cube;
+      state->cube = nullptr;
+    }
+    if (state->renderer) {
+      delete state->renderer;
+      state->renderer = nullptr;
+    }
 
     SDL_GL_DestroyContext(state->gl_context);
     SDL_DestroyWindow(state->window);
