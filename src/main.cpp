@@ -2,6 +2,10 @@
 #include <iostream>
 #include <numbers>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #define SDL_MAIN_USE_CALLBACKS 1  // Tell SDL to use the callback architecture
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -14,43 +18,6 @@
 #include <SDL3/SDL_opengl.h>
 #include <SDL3/SDL_opengl_glext.h>
 #endif
-
-// Simple matrix math helpers (to avoid external dependencies like GLM for this
-// example)
-void multiply_matrix(const float* a, const float* b, float* out) {
-  float res[16];
-  for (int i = 0; i < 4; ++i) {
-    for (int j = 0; j < 4; ++j) {
-      res[i * 4 + j] = 0;
-      for (int k = 0; k < 4; ++k) {
-        res[i * 4 + j] += a[i * 4 + k] * b[k * 4 + j];
-      }
-    }
-  }
-  for (int i = 0; i < 16; ++i) out[i] = res[i];
-}
-
-void get_rotation_y(float angle, float* m) {
-  float c = cosf(angle), s = sinf(angle);
-  float r[16] = {
-      c,  0, s, 0,  // X
-      0,  1, 0, 0,  // Y
-      -s, 0, c, 0,  // Z
-      0,  0, 0, 1   // W
-  };
-  for (int i = 0; i < 16; ++i) m[i] = r[i];
-}
-
-void get_projection(float fov, float aspect, float nearZ, float farZ,
-                    float* m) {
-  float f = 1.0f / tanf(fov / 2.0f);
-  for (int i = 0; i < 16; i++) m[i] = 0.0f;
-  m[0] = f / aspect;
-  m[5] = f;
-  m[10] = (farZ + nearZ) / (nearZ - farZ);
-  m[11] = (2.0f * farZ * nearZ) / (nearZ - farZ);
-  m[14] = -1.0f;
-}
 
 // Shader Sources
 #ifdef __EMSCRIPTEN__
@@ -280,29 +247,20 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   // --- 1. Update Game/App Logic Here ---
   float time = SDL_GetTicks() / 1000.0f;
 
-  // Build MVP Matrix
-  float model[16];
-  get_rotation_y(time, model);  // Rotate around Y axis over time
+  // Build MVP Matrix using GLM
+  glm::mat4 model = glm::rotate(glm::mat4(1.0f), time, glm::vec3(0.0f, 1.0f, 0.0f));
 
-  float view[16] = {
-      1, 0, 0, 0,      // X
-      0, 1, 0, 0,      // Y
-      0, 0, 1, -2.5f,  // Z Move back 2.5 units on Z
-      0, 0, 0, 1       // W
-  };
+  glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.5f));
 
-  float projection[16];
-  get_projection(45.0f * (std::numbers::pi / 180.0f), 1280.0f / 800.0f, 0.1f,
-                 100.0f, projection);
+  glm::mat4 projection = glm::perspective(
+      45.0f * (static_cast<float>(std::numbers::pi) / 180.0f),
+      1280.0f / 800.0f, 0.1f, 100.0f);
 
-  float viewProj[16];
-  multiply_matrix(projection, view, viewProj);
-  float mvp[16];
-  multiply_matrix(viewProj, model, mvp);
+  glm::mat4 mvp = projection * view * model;
 
   // Pass matrix to shader
   glUseProgram(state->shaderProgram);
-  glUniformMatrix4fv(state->mvpLoc, 1, GL_TRUE, mvp);
+  glUniformMatrix4fv(state->mvpLoc, 1, GL_FALSE, glm::value_ptr(mvp));
 
   // --- 2. Render Graphics Here ---
   glClearColor(0.45f, 0.55f, 0.60f, 1.00f);

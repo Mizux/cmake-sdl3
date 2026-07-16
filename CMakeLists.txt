@@ -65,6 +65,11 @@ endif()
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
 include(CTest)
 
+# All deps static for the web
+if(${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
+set(BUILD_SHARED_LIBS OFF)
+endif()
+
 find_package(OpenGL REQUIRED)
 # SDL
 find_package(SDL3 REQUIRED)
@@ -79,6 +84,14 @@ endif()
 include(FetchContent)
 set(FETCHCONTENT_QUIET OFF)
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
+
+FetchContent_Declare(
+  glm
+  GIT_REPOSITORY https://github.com/g-truc/glm.git
+  GIT_TAG        1.0.3
+  GIT_SHALLOW    TRUE
+)
+FetchContent_MakeAvailable(glm)
 
 # Main App
 file(GLOB_RECURSE _SRCS src/*.cpp src/*.hpp)
@@ -96,6 +109,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   SDL3::SDL3
   SDL3_image::SDL3_image
   OpenGL::GL
+  glm::glm
 )
 if(${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
   set_target_properties(${PROJECT_NAME} PROPERTIES
