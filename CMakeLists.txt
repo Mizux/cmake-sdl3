@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.25)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+# Enable output of compile commands during generation.
+option(CMAKE_EXPORT_COMPILE_COMMANDS "Export compile command" ON)
+
 project(sdlgl VERSION 0.1 LANGUAGES CXX)
 message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION}")
 #message(STATUS "major: ${PROJECT_VERSION_MAJOR}")
