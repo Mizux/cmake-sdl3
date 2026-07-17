@@ -150,6 +150,9 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   // --- 1. Update Game/App Logic Here ---
   float time = SDL_GetTicks() / 1000.0f;
 
+  // Update Cube
+  state->cube->update(time);
+
   // Get ViewProjection Matrix from Camera
   glm::mat4 pv = state->camera->getViewProjectionMatrix();
 
@@ -158,7 +161,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   // Draw Cube
-  state->cube->draw(*state->renderer, pv, time);
+  state->cube->draw(*state->renderer, pv);
 
   SDL_GL_SwapWindow(state->window);
 

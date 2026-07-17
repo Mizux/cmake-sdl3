@@ -19,13 +19,15 @@ public:
   ~Cube();
 
   void init();
-  void draw(const glRenderer& renderer, const glm::mat4& pv, float time) const;
+  void update(float time);
+  void draw(const glRenderer& renderer, const glm::mat4& pv) const;
   void destroy();
 
 private:
   GLuint VAO = 0;
   GLuint VBO = 0;
   GLuint EBO = 0;
+  glm::mat4 model = glm::mat4(1.0f);
 };
 
 #endif // CUBE_HPP
