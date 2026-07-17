@@ -20,6 +20,7 @@
 
 #include "gl_renderer.hpp"
 #include "cube.hpp"
+#include "camera.hpp"
 
 // Main code
 // A struct to hold your application state (replaces global variables)
@@ -28,6 +29,7 @@ struct AppState {
   SDL_GLContext gl_context = nullptr;
 
   std::unique_ptr<glRenderer> renderer;
+  std::unique_ptr<Camera> camera;
   std::unique_ptr<Cube> cube;
 };
 
@@ -93,6 +95,12 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
   // CUBE SETUP
   state->cube = std::make_unique<Cube>();
   state->cube->init();
+
+  // CAMERA SETUP
+  int w, h;
+  SDL_GetWindowSize(state->window, &w, &h);
+  state->camera = std::make_unique<Camera>(
+      45.0f, static_cast<float>(w) / static_cast<float>(h), 0.1f, 100.0f);
   // SHADER SETUP END
 
   SDL_GL_MakeCurrent(state->window, state->gl_context);
@@ -120,6 +128,13 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
       return SDL_APP_SUCCESS;
     }
   }
+  if (event->type == SDL_EVENT_WINDOW_RESIZED &&
+      event->window.windowID == SDL_GetWindowID(state->window)) {
+    if (state->camera) {
+      state->camera->setAspectRatio(static_cast<float>(event->window.data1) /
+                                    static_cast<float>(event->window.data2));
+    }
+  }
   return SDL_APP_CONTINUE;
 }
 
@@ -135,15 +150,8 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   // --- 1. Update Game/App Logic Here ---
   float time = SDL_GetTicks() / 1000.0f;
 
-  // Build Projection * View (Camera) Matrix using GLM
-  glm::mat4 view =
-      glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.5f));
-
-  glm::mat4 projection =
-      glm::perspective(45.0f * (static_cast<float>(std::numbers::pi) / 180.0f),
-                       1280.0f / 800.0f, 0.1f, 100.0f);
-
-  glm::mat4 pv = projection * view;
+  // Get ViewProjection Matrix from Camera
+  glm::mat4 pv = state->camera->getViewProjectionMatrix();
 
   // --- 2. Render Graphics Here ---
   glClearColor(0.45f, 0.55f, 0.60f, 1.00f);
@@ -162,8 +170,9 @@ void SDL_AppQuit(void* appstate, SDL_AppResult result) {
   if (appstate) {
     AppState* state = static_cast<AppState*>(appstate);
 
-    // Destroy cube and renderer while the OpenGL context is still valid
+    // Destroy cube, camera, and renderer while the OpenGL context is still valid
     state->cube.reset();
+    state->camera.reset();
     state->renderer.reset();
 
     SDL_GL_DestroyContext(state->gl_context);
