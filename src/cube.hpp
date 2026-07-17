@@ -10,17 +10,18 @@
 #endif
 
 #include <glm/glm.hpp>
+#include <memory>
 
-class glRenderer;
+class Program;
 
 class Cube {
 public:
-  Cube();
+  Cube(std::shared_ptr<Program> prog);
   ~Cube();
 
   void init();
   void update(float time);
-  void draw(const glRenderer& renderer, const glm::mat4& pv) const;
+  void draw(const glm::mat4& pv) const;
   void destroy();
 
 private:
@@ -28,6 +29,7 @@ private:
   GLuint VBO = 0;
   GLuint EBO = 0;
   glm::mat4 model = glm::mat4(1.0f);
+  std::shared_ptr<Program> program;
 };
 
 #endif // CUBE_HPP

@@ -1,6 +1,7 @@
 #ifndef GL_RENDERER_HPP
 #define GL_RENDERER_HPP
 
+#include <SDL3/SDL_video.h>
 #ifdef __EMSCRIPTEN__
 #include <GLES3/gl3.h>
 #else
@@ -11,21 +12,22 @@
 
 #include <glm/glm.hpp>
 
+class Camera;
+class Scene;
 class glRenderer {
 public:
-  glRenderer();
+  glRenderer(SDL_Window* window);
   ~glRenderer();
 
   bool init();
-  void use() const;
-  void setMVP(const glm::mat4& mvp) const;
+  void render(Camera* camera, Scene* scene);
   void destroy();
-
 private:
-  GLuint shaderProgram = 0;
-  GLint mvpLoc = -1;
+  void beginFrame();
+  void endFrame();
 
-  static GLuint compileShader(GLenum type, const char* source);
+  SDL_Window* window;
+  SDL_GLContext gl_context;
 };
 
 #endif // GL_RENDERER_HPP

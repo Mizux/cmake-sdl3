@@ -1,8 +1,9 @@
 #include "cube.hpp"
-#include "gl_renderer.hpp"
+#include "program.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 
-Cube::Cube() : VAO(0), VBO(0), EBO(0) {}
+Cube::Cube(std::shared_ptr<Program> prog)
+    : program(prog), VAO(0), VBO(0), EBO(0) {}
 
 Cube::~Cube() {
   destroy();
@@ -58,12 +59,12 @@ void Cube::update(float time) {
   model = glm::rotate(glm::mat4(1.0f), time, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
-void Cube::draw(const glRenderer& renderer, const glm::mat4& pv) const {
+void Cube::draw(const glm::mat4& pv) const {
   if (VAO != 0) {
     glm::mat4 mvp = pv * model;
 
-    renderer.use();
-    renderer.setMVP(mvp);
+    program->use();
+    program->setUniformMatrix4fv("uMVP", mvp);
 
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
@@ -71,6 +72,7 @@ void Cube::draw(const glRenderer& renderer, const glm::mat4& pv) const {
 }
 
 void Cube::destroy() {
+  program.reset();
   if (VAO != 0) {
     glDeleteVertexArrays(1, &VAO);
     VAO = 0;
