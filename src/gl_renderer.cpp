@@ -41,6 +41,7 @@ bool glRenderer::init() {
 
   // Enable Depth Testing for 3D
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_CULL_FACE);
   return true;
 }
   
